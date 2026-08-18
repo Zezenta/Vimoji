@@ -53,9 +53,12 @@ Vimoji combines modal keyboard ergonomics (`hjkl`, `:`, `a/d`, `Tab`), instant m
 - **Omarchy** with `quickshell` shell environment
 - `wtype` and `wl-copy` (`sudo pacman -S wtype wl-clipboard`)
 
-### Automated Install
-Clone this repository and run the installer:
+### Method 1: Official Omarchy Plugin Manager (Recommended)
+```bash
+omarchy plugin add https://github.com/Zezenta/vimoji.git --enable
+```
 
+### Method 2: Manual Clone & Install
 ```bash
 git clone https://github.com/Zezenta/vimoji.git ~/Desktop/Coding/vimoji
 cd ~/Desktop/Coding/vimoji
@@ -63,32 +66,22 @@ chmod +x install.sh
 ./install.sh
 ```
 
-### Enable in Omarchy
-1. Add `zezenta.emojis` to your `~/.config/omarchy/shell.json`:
-   ```json
-   "disabledPlugins": [
-     "omarchy.emojis"
-   ],
-   "plugins": [
-     { "id": "zezenta.emojis" }
-   ]
-   ```
+### Keybind Configuration
+In your `~/.config/hypr/bindings.conf`:
+```ini
+bindd = SUPER, period, Emoji picker, exec, omarchy-shell shell toggle zezenta.vimoji
+```
 
-2. Bind to a shortcut in `~/.config/hypr/bindings.conf`:
-   ```ini
-   bindd = SUPER, period, Emoji picker, exec, omarchy-shell shell toggle zezenta.emojis
-   ```
-
-3. Restart the shell:
-   ```bash
-   omarchy-shell shell rescanPlugins && omarchy restart shell
-   ```
+Then reload Omarchy shell:
+```bash
+omarchy-shell shell rescanPlugins && omarchy restart shell
+```
 
 ---
 
 ## 🛠️ Architecture
 
-- **`manifest.json`**: Plugin manifest declaring metadata and namespace.
+- **`manifest.json`**: Official Omarchy schemaVersion 1 manifest declaring the `overlay` plugin kind.
 - **`Emojis.qml`**: Layer-shell interface with dynamic Wayland keyboard focus negotiation (`WlrLayershell.keyboardFocus`) for zero-delay multi-pasting.
 - **`EmojiData.js`**: Unicode 16.0 database (1,906 categorized emojis) + scoring engine & Spanish synonym dictionary.
 - **`multi-paste.sh`**: Auxiliary clipboard and input dispatcher using `wtype` and `hyprctl dispatch`.
@@ -97,4 +90,4 @@ chmod +x install.sh
 
 ## 📜 License
 
-MIT License. Crafted with ❤️ by [Zezenta](https://github.com/Zezenta).
+MIT License. Copyright (c) 2026 [Zezenta](https://github.com/Zezenta).
