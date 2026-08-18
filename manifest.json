@@ -1,0 +1,8 @@
+{
+  "id": "zezenta.vimoji",
+  "name": "Vimoji",
+  "description": "Blazing-fast Neovim-style modal emoji picker with fuzzy multi-language search and seamless multi-paste for Omarchy & Hyprland",
+  "author": "Zezenta",
+  "version": "1.0.0",
+  "type": "plugin"
+}
