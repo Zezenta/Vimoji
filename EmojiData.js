@@ -5847,16 +5847,35 @@ function stripAccents(s) {
   return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
+// Pre-computed normalized strings for instant sub-millisecond search
+var EMOJI_COUNT = 0;
+var NORMALIZED_KEYWORDS = [];
+var NORMALIZED_NAMES = [];
+var SEARCH_CACHE = {};
+
+(function initSearchIndex() {
+  EMOJI_COUNT = ALL_EMOJIS.length;
+  NORMALIZED_KEYWORDS = new Array(EMOJI_COUNT);
+  NORMALIZED_NAMES = new Array(EMOJI_COUNT);
+  for (var i = 0; i < EMOJI_COUNT; i++) {
+    var em = ALL_EMOJIS[i];
+    NORMALIZED_KEYWORDS[i] = stripAccents(EMOJI_KEYWORDS[em] || "");
+    NORMALIZED_NAMES[i] = stripAccents(EMOJI_NAMES[em] || "");
+  }
+})();
+
 function fuzzyMatch(str, pattern) {
   var sIdx = 0;
   var pIdx = 0;
-  while (sIdx < str.length && pIdx < pattern.length) {
-    if (str.charAt(sIdx) === pattern.charAt(pIdx)) {
+  var sLen = str.length;
+  var pLen = pattern.length;
+  while (sIdx < sLen && pIdx < pLen) {
+    if (str.charCodeAt(sIdx) === pattern.charCodeAt(pIdx)) {
       pIdx++;
     }
     sIdx++;
   }
-  return pIdx === pattern.length;
+  return pIdx === pLen;
 }
 
 function searchEmojis(query, limit) {
@@ -5864,27 +5883,35 @@ function searchEmojis(query, limit) {
   var clean = stripAccents(query.trim());
   if (clean.length === 0) return [];
 
-  var max = limit || 1000;
-  var tokens = clean.split(/\s+/);
-  var scored = [];
-
-  // Expand tokens with Spanish synonyms
-  var expandedTerms = [];
-  for (var t = 0; t < tokens.length; t++) {
-    var tok = tokens[t];
-    expandedTerms.push(tok);
-    if (SPANISH_ALIASES[tok]) {
-      var aliases = SPANISH_ALIASES[tok];
-      for (var a = 0; a < aliases.length; a++) {
-        expandedTerms.push(aliases[a]);
-      }
-    }
+  // Instant response for cached queries
+  if (SEARCH_CACHE[clean]) {
+    return SEARCH_CACHE[clean];
   }
 
-  for (var i = 0; i < ALL_EMOJIS.length; i++) {
+  var max = limit || 250;
+  var rawTokens = clean.split(/\s+/);
+  var tokenGroups = [];
+
+  // Pre-expand Spanish aliases once per query instead of inside the 1906 loop
+  for (var t = 0; t < rawTokens.length; t++) {
+    var raw = rawTokens[t];
+    var group = [raw];
+    if (SPANISH_ALIASES[raw]) {
+      var alList = SPANISH_ALIASES[raw];
+      for (var a = 0; a < alList.length; a++) {
+        group.push(alList[a]);
+      }
+    }
+    tokenGroups.push(group);
+  }
+
+  var numTokens = tokenGroups.length;
+  var scored = [];
+
+  for (var i = 0; i < EMOJI_COUNT; i++) {
     var em = ALL_EMOJIS[i];
-    var kw = stripAccents(EMOJI_KEYWORDS[em] || "");
-    var name = stripAccents(EMOJI_NAMES[em] || "");
+    var kw = NORMALIZED_KEYWORDS[i];
+    var name = NORMALIZED_NAMES[i];
     var score = 0;
 
     // Direct emoji character match
@@ -5892,7 +5919,7 @@ function searchEmojis(query, limit) {
       score += 2000;
     }
 
-    // Exact name match
+    // Exact or prefix name match
     if (name === clean) {
       score += 1500;
     } else if (name.indexOf(clean) === 0) {
@@ -5905,46 +5932,39 @@ function searchEmojis(query, limit) {
 
     // Token & Alias matching
     var matchedTokens = 0;
-    for (var k = 0; k < tokens.length; k++) {
-      var queryTok = tokens[k];
-      var tokMatched = false;
+    for (var g = 0; g < numTokens; g++) {
+      var group = tokenGroups[g];
+      var groupMatched = false;
 
-      if (name.indexOf(queryTok) !== -1) {
-        score += 200;
-        tokMatched = true;
-      } else if (kw.indexOf(queryTok) !== -1) {
-        score += 100;
-        tokMatched = true;
-      } else if (SPANISH_ALIASES[queryTok]) {
-        var alList = SPANISH_ALIASES[queryTok];
-        for (var l = 0; l < alList.length; l++) {
-          if (name.indexOf(alList[l]) !== -1) {
-            score += 180;
-            tokMatched = true;
+      for (var k = 0; k < group.length; k++) {
+        var term = group[k];
+        var isDirect = (k === 0);
+
+        if (name.indexOf(term) !== -1) {
+          score += isDirect ? 200 : 160;
+          groupMatched = true;
+          break;
+        } else if (kw.indexOf(term) !== -1) {
+          score += isDirect ? 100 : 80;
+          groupMatched = true;
+          break;
+        } else if (isDirect && term.length >= 3) {
+          if (fuzzyMatch(name, term)) {
+            score += 40;
+            groupMatched = true;
             break;
-          } else if (kw.indexOf(alList[l]) !== -1) {
-            score += 90;
-            tokMatched = true;
+          } else if (fuzzyMatch(kw, term)) {
+            score += 20;
+            groupMatched = true;
             break;
           }
         }
       }
 
-      // Fuzzy subsequence match (e.g. "sml" -> "smiling")
-      if (!tokMatched && queryTok.length >= 3) {
-        if (fuzzyMatch(name, queryTok)) {
-          score += 40;
-          tokMatched = true;
-        } else if (fuzzyMatch(kw, queryTok)) {
-          score += 20;
-          tokMatched = true;
-        }
-      }
-
-      if (tokMatched) matchedTokens++;
+      if (groupMatched) matchedTokens++;
     }
 
-    if (score > 0 && (matchedTokens === tokens.length || score >= 250)) {
+    if (score > 0 && (matchedTokens === numTokens || score >= 250)) {
       scored.push({ emoji: em, score: score });
     }
   }
@@ -5954,10 +5974,12 @@ function searchEmojis(query, limit) {
     return b.score - a.score;
   });
 
-  var results = [];
-  for (var r = 0; r < scored.length && r < max; r++) {
-    results.push(scored[r].emoji);
+  var resLen = Math.min(scored.length, max);
+  var results = new Array(resLen);
+  for (var r = 0; r < resLen; r++) {
+    results[r] = scored[r].emoji;
   }
 
+  SEARCH_CACHE[clean] = results;
   return results;
 }

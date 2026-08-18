@@ -137,7 +137,7 @@ Item {
   function rebuildGrid() {
     var list
     if (root.searchQuery.trim().length > 0) {
-      list = EmojiData.searchEmojis(root.searchQuery, 1000)
+      list = EmojiData.searchEmojis(root.searchQuery, 250)
     } else {
       list = EmojiData.getEmojisForTab(root.currentTabIdx, root.stateData)
     }
