@@ -83,7 +83,7 @@ Item {
     root.searchMode = false
     root.searchQuery = ""
     if (root.shell && typeof root.shell.hide === "function") {
-      root.shell.hide((root.manifest && root.manifest.id) || "omarchy.emojis")
+      root.shell.hide((root.manifest && root.manifest.id) || "zezenta.vimoji")
     }
   }
 

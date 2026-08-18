@@ -4,7 +4,7 @@
 # ==============================================================================
 set -e
 
-PLUGIN_DIR="${HOME}/.config/omarchy/plugins/zezenta.emojis"
+PLUGIN_DIR="${HOME}/.config/omarchy/plugins/zezenta.vimoji"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "==> Installing Vimoji plugin to ${PLUGIN_DIR}..."
@@ -22,5 +22,5 @@ omarchy-shell shell rescanPlugins 2>/dev/null || true
 echo ""
 echo "✨ Vimoji installed successfully!"
 echo "To bind Vimoji to SUPER + . in ~/.config/hypr/bindings.conf:"
-echo '  bindd = SUPER, period, Emoji picker, exec, omarchy-shell shell toggle zezenta.emojis'
+echo '  bindd = SUPER, period, Emoji picker, exec, omarchy-shell shell toggle zezenta.vimoji'
 echo ""

@@ -4,7 +4,7 @@
 # ==============================================================================
 set -e
 
-PLUGIN_DIR="${HOME}/.config/omarchy/plugins/zezenta.emojis"
+PLUGIN_DIR="${HOME}/.config/omarchy/plugins/zezenta.vimoji"
 
 if [ -d "${PLUGIN_DIR}" ]; then
   echo "==> Removing Vimoji plugin from ${PLUGIN_DIR}..."
