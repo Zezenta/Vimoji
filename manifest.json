@@ -5,6 +5,7 @@
   "version": "1.0.0",
   "author": "Zezenta",
   "description": "Blazing-fast Neovim-style modal emoji picker with fuzzy multi-language search and seamless multi-paste for Omarchy & Hyprland.",
+  "license": "MIT",
   "kinds": [
     "overlay"
   ],

@@ -3,7 +3,7 @@
 > A blazing-fast, modal **Neovim-style emoji picker** for **Omarchy** and **Hyprland** / Wayland desktop environments.
 
 <p align="center">
-  <img src="assets/preview.png" alt="Vimoji Preview" width="620" />
+  <img src="preview.png" alt="Vimoji Preview" width="620" />
 </p>
 
 Vimoji combines modal keyboard ergonomics (`hjkl`, `:`, `a/d`, `Tab`), instant multi-language search (Spanish + English), and seamless zero-delay multi-pasting without closing the window.
