@@ -44,12 +44,17 @@ Item {
   property int contentMargin: Style.spacing.panelPadding
   property int contentSpacing: Style.spacing.md
 
-  property int cardWidth: Math.min(Style.space(500), panel.width - Style.gapsOut * 2)
-  property int cardHeight: Math.min(Style.space(490), panel.height - Style.gapsOut * 2)
+  // Keep the picker inside the usable screen area at every monitor and text scale.
+  property int cardWidth: Math.max(1, Math.min(Style.space(500), panel.width - Style.gapsOut * 2))
+  property int cardHeight: Math.max(1, Math.min(Style.space(490), panel.height - Style.gapsOut * 2))
 
-  readonly property int cols: 9
-  property int cellWidth: Math.floor((cardWidth - contentMargin * 2) / cols)
-  property int cellHeight: cellWidth
+  // Size cells from GridView's actual viewport, not the card or its parent.
+  // The viewport can be a few pixels narrower after layout rounding, which used
+  // to make navigation count a ninth column that GridView could not render.
+  readonly property int preferredCellWidth: Style.space(50)
+  readonly property int cols: Math.max(1, Math.floor(Math.max(0, resultGrid.width - 1) / preferredCellWidth))
+  readonly property int cellWidth: Math.max(1, Math.floor(resultGrid.width / cols))
+  readonly property int cellHeight: cellWidth
 
   property bool keyboardActive: true
 
@@ -462,6 +467,7 @@ Item {
 
         // 1. Header (Tabs OR Search Input)
         Rectangle {
+          id: header
           width: parent.width
           height: Style.space(48)
           radius: root.cornerRadius
@@ -471,7 +477,7 @@ Item {
           Row {
             visible: !root.searchMode && root.searchQuery.length === 0
             anchors.centerIn: parent
-            spacing: Style.space(6)
+            spacing: Math.max(1, Style.space(6))
 
             Repeater {
               model: EmojiData.TAB_ICONS
@@ -482,8 +488,11 @@ Item {
 
                 readonly property bool isActive: index === root.currentTabIdx
 
-                width: Style.space(38)
-                height: Style.space(38)
+                // Let category tabs contract with the header on small screens or
+                // unusually large text scales instead of overflowing its bounds.
+                readonly property int availableWidth: header.width - parent.spacing * (EmojiData.TAB_ICONS.length - 1)
+                width: Math.max(1, Math.min(Style.space(38), Math.floor(Math.max(0, availableWidth) / EmojiData.TAB_ICONS.length)))
+                height: width
                 radius: Style.cornerRadius
                 color: isActive
                   ? (Color.accent ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.28) : Qt.rgba(1, 1, 1, 0.22))
@@ -495,7 +504,7 @@ Item {
                   anchors.centerIn: parent
                   text: parent.modelData
                   font.family: root.emojiFont
-                  font.pixelSize: isActive ? Style.space(22) : Style.space(18)
+                  font.pixelSize: Math.min(isActive ? Style.space(22) : Style.space(18), parent.height * 0.62)
                 }
 
                 MouseArea {
@@ -574,8 +583,9 @@ Item {
 
         // 2. Grid Content Area (Ultra-fast direct JS Array binding)
         Item {
+          id: gridArea
           width: parent.width
-          height: parent.height - Style.space(48) - Style.space(64) - Style.space(16)
+          height: Math.max(0, parent.height - Style.space(48) - Style.space(64) - Style.space(16))
 
           GridView {
             id: resultGrid
